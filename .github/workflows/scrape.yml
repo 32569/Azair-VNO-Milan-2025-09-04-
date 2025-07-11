@@ -1,42 +1,44 @@
 name: scrape
 
 on:
-  schedule:
-    - cron: '0 8 * * *'  # kasdien 8:00
   workflow_dispatch:
+  schedule:
+    - cron: '0 8 * * *'  # kasdien 8 valandą ryto
+
+permissions:
+  contents: write  # leidžia GitHub Actions rašyti į repozitoriją
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.x
+          python-version: 3.10
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          pip install requests beautifulsoup4 pandas
 
       - name: Run scraper
-        run: python scraper/azair_scraper.py
+        run: |
+          python scraper/azair_scraper.py
 
       - name: Commit CSV
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-          git add data/flights.csv
+          git add data/azair_data.csv
           git commit -m "Daily flight data update" || echo "No changes to commit"
-          git remote set-url origin https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository }}
-          git push origin main
+          git push
 
-            - name: Upload debug HTML
+      - name: Upload debug HTML
         uses: actions/upload-artifact@v4
         with:
-          name: azair_debug_page
+          name: azair-page-debug
           path: azair_page_debug.html
-
