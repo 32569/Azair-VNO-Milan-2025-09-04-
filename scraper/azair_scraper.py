@@ -37,8 +37,31 @@ else:
     output_dir = "data"
     os.makedirs(output_dir, exist_ok=True)
     output_file = os.path.join(output_dir, "flights.csv")
-
     file_exists = os.path.isfile(output_file)
 
     # Įrašom duomenis
-    with open(output_file, mode="a", newline="", e_
+    with open(output_file, mode="a", newline="", encoding="utf-8") as csvfile:
+        writer = csv.writer(csvfile)
+
+        if not file_exists:
+            writer.writerow(["date", "airline", "time", "price"])
+
+        for result in results[:3]:  # Top 3 pasiūlymai
+            airline = result.find("span", class_="company")
+            depart = result.find("span", class_="depart-time")
+            arrive = result.find("span", class_="arrive-time")
+            price = result.find("span", class_="price")
+
+            # Patikrinam ar viskas rasta
+            if not (airline and depart and arrive and price):
+                continue
+
+            flight_time = f"{depart.get_text(strip=True)} → {arrive.get_text(strip=True)}"
+            writer.writerow([
+                str(date.today()),
+                airline.get_text(strip=True),
+                flight_time,
+                price.get_text(strip=True)
+            ])
+
+    print("✅ CSV sėkmingai atnaujintas.")
