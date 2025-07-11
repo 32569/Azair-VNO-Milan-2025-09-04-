@@ -2,21 +2,21 @@ name: Daily Azair Scraper
 
 on:
   schedule:
-    - cron: "0 4 * * *"        # kasdien 04:00 UTC ≈ 07:00 LT
-  workflow_dispatch:           # leidžia paleisti rankiniu būdu
+    - cron: "0 6 * * *"  # kasdien 06:00 UTC
+  workflow_dispatch:
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write          # reikia, kad galėtų commitinti CSV
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: '3.x'
 
       - name: Install dependencies
         run: pip install -r requirements.txt
@@ -25,7 +25,15 @@ jobs:
         run: python scraper/azair_scraper.py
 
       - name: Commit CSV
-        uses: EndBug/add-and-commit@v9
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add data/flights.csv
+          git commit -m "Daily flight data update" || echo "No changes to commit"
+          git push
+
+      - name: Upload debug HTML
+        uses: actions/upload-artifact@v4
         with:
-          message: "Daily flight data update"
-          add: "data/flights.csv"
+          name: azair_page_debug
+          path: azair_page_debug.html
