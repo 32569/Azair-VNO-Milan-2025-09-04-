@@ -1,48 +1,65 @@
 import requests
 from bs4 import BeautifulSoup
+import pandas as pd
 from datetime import datetime
-import csv
 import os
 
-# Konstantos
 URL = "https://www.azair.eu/"
 
-# Užklausa
 params = {
     "searchtype": "flexi",
-    "from": "VNO",
-    "to": "Milan",
-    "depdate": "2025-09-04",
+    "srcAirport": "VNO",
+    "dstAirport": "MIL",
     "adults": "1",
-    "maxChng": "0",
-    "index_submit": "Search"
+    "children": "0",
+    "infants": "0",
+    "minDaysStay": "0",
+    "maxDaysStay": "0",
+    "departureDate": "2025-09-04",
+    "returnDate": "",
+    "isOneway": "true",
+    "currency": "eur",
+    "lang": "en"
 }
-headers = {
-    "User-Agent": "Mozilla/5.0"
-}
-response = requests.get(URL, params=params, headers=headers)
-soup = BeautifulSoup(response.text, "html.parser")
 
-# Išsaugome HTML debug’ui
-with open("azair_page_debug.html", "w", encoding="utf-8") as f:
-    f.write(soup.prettify())
+response = requests.get(URL, params=params, headers={"User-Agent": "Mozilla/5.0"})
+html = response.text
 
-# CSV failas
-os.makedirs("data", exist_ok=True)
-csv_path = "data/flights.csv"
-today = datetime.today().strftime("%Y-%m-%d")
+# 🔍 Išsaugome HTML debugui
+debug_path = "scraper/azair_page_debug.html"
+with open(debug_path, "w", encoding="utf-8") as f:
+    f.write(html)
 
-# Ištraukiame duomenis (ši dalis priklauso nuo HTML struktūros)
-offers = soup.find_all("tr", class_="result")
-if not offers:
-    with open(csv_path, "a", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow([today, "no data", "no data", "no data"])
-else:
-    for offer in offers[:3]:  # Tik 3 pigiausi
-        time = offer.find("td", class_="departure").text.strip() if offer.find("td", class_="departure") else "?"
-        airport = offer.find("td", class_="airport").text.strip() if offer.find("td", class_="airport") else "?"
-        price = offer.find("td", class_="price").text.strip() if offer.find("td", class_="price") else "?"
-        with open(csv_path, "a", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow([today, time, airport, price])
+soup = BeautifulSoup(html, "html.parser")
+offers = soup.select(".result")
+
+data = []
+for offer in offers[:3]:  # tik pirmi 3 pasiūlymai
+    try:
+        time = offer.select_one(".departure .time").text.strip()
+        airport = offer.select_one(".departure .airport").text.strip()
+        price = offer.select_one(".result-price .price").text.strip()
+        data.append({
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "time": time,
+            "airport": airport,
+            "price": price
+        })
+    except:
+        continue
+
+# jei nėra pasiūlymų
+if not data:
+    data = [{
+        "date": datetime.now().strftime("%Y-%m-%d"),
+        "time": "no data",
+        "airport": "no data",
+        "price": "no data"
+    }]
+
+df = pd.DataFrame(data)
+
+output_file = "data/flights.csv"
+header_needed = not os.path.exists(output_file)
+
+df.to_csv(output_file, mode="a", index=False, header=header_needed)
