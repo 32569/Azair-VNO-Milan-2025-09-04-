@@ -3,10 +3,7 @@ name: scrape
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 8 * * *'  # kasdien 8 valandą ryto
-
-permissions:
-  contents: write  # leidžia GitHub Actions rašyti į repozitoriją
+    - cron: '0 7 * * *'  # kasdien 07:00 UTC
 
 jobs:
   scrape:
@@ -23,7 +20,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install requests beautifulsoup4 pandas
+          pip install -r requirements.txt
 
       - name: Run scraper
         run: |
@@ -33,12 +30,6 @@ jobs:
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-          git add data/azair_data.csv
+          git add data/
           git commit -m "Daily flight data update" || echo "No changes to commit"
-          git push
-
-      - name: Upload debug HTML
-        uses: actions/upload-artifact@v4
-        with:
-          name: azair-page-debug
-          path: azair_page_debug.html
+          git push https://x-access-token:${{ secrets.PERSONAL_TOKEN }}@github.com/${{ github.repository }}.git HEAD:main
