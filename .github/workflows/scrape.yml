@@ -2,15 +2,14 @@ name: Daily Azair Scraper
 
 on:
   schedule:
-    - cron: "0 4 * * *"   # kasdien 04:00 UTC (07:00 Lietuvos laiku)
-  workflow_dispatch:      # galima paleisti rankiniu būdu
+    - cron: "0 4 * * *"        # kasdien 04:00 UTC ≈ 07:00 LT
+  workflow_dispatch:           # leidžia paleisti rankiniu būdu
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-
+      contents: write          # reikia, kad galėtų commitinti CSV
     steps:
       - uses: actions/checkout@v4
 
@@ -28,5 +27,5 @@ jobs:
       - name: Commit CSV
         uses: EndBug/add-and-commit@v9
         with:
-          message: "Daily update"
+          message: "Daily flight data update"
           add: "data/flights.csv"
